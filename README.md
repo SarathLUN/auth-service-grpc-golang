@@ -433,3 +433,6 @@ Now open an API testing tool (Postman, Thunder Client, HTTP Client, REST Client,
 
 ![auth-service-grpc-golang-health-checker](images/auth-service-grpc-golang-health-checker.png)
 
+show redis key:
+
+![](images/redis-cli-01.png)
