@@ -572,3 +572,8 @@ REFRESH_TOKEN_PUBLIC_KEY=LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlHZk1BMEdDU3FHU0l
 REFRESH_TOKEN_EXPIRED_IN=60m
 REFRESH_TOKEN_MAXAGE=60
 ```
+
+Next, update the `config/default.go` file with the environment variables provided in the `app.env` file for Viper to load and make them available in the project.
+
+**config/default.go**
+
