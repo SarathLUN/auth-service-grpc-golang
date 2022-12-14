@@ -617,3 +617,51 @@ func LoadConfig(path string) (config Config, err error) {
 }
 ```
 
+### Creating the User models with structs
+
+In the JSON web Token authentication flow, we need to start by signing up the user. To achieve that let’s define a struct that specifies the fields required to register a user.
+
+To define the user struct, you need to specify the field name followed by the field type and an optional tag which will be used by `Gin Gonic` and `MongoDB` for validation, marshaling, and unmarshaling.
+
+Now create a `SignUpInput` struct to specify the fields required to register a new user.
+
+The `bson` tag will be used by MongoDB since MongoDB stores data as BSON documents. Also, the `json` tag will be used by Gin Gonic for validating user inputs.
+
+Lastly, the `binding` tag specifies additional validation rules that will be used by Gin Gonic to validate user inputs.
+
+**models/user.model.go**
+
+```go
+package models
+
+import "time"
+
+type SignUpInput struct {
+	Name string `json:"name" bson:"name" bindinng:"required"`
+	Email string `json:"email" bson:"email" binding:"required"`
+	Password string `json:"password" bson:"password" binding:"required,min=8"`
+	ConfirmPassword string `json:"confirm_password" bson:"confirm_password,omitempty" binding:"required"`
+	Role string `json:"role" bson:"role"`
+	Verified bool `json:"verified" bson:"verified"`
+	CreatedAt time.Time `json:"created_at" bson:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" bson:"updated_at"`
+}
+```
+
+With the user login logic, we’ll only require the user to provide an email and password. 
+To achieve that create a `SignInInput` struct with email and password fields and make them required.
+
+**models/user.model.go**
+
+```go
+package models
+
+import "time"
+
+// ? SignUpInput struct
+
+type SignInInput struct {
+	Email    string `json:"email" bson:"email" binding:"required"`
+	Password string `json:"password" bson:"password" binding:"required"`
+}
+```
