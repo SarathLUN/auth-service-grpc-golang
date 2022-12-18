@@ -195,11 +195,11 @@ the `config.LoadConfig(".")` function by passing the path to the `app.env` file 
 ```go
 // init function that will run before `main` function
 func init() {
-    // load the .env variable
-    config, err := config.LoadConfig(".")
-    if err != nil {
-        log.Fatalln("Could not load environment variables", err)
-    }
+// load the .env variable
+config, err := config.LoadConfig(".")
+if err != nil {
+log.Fatalln("Could not load environment variables", err)
+}
 
 ```
 
@@ -238,7 +238,8 @@ func init() {
 }
 ```
 
-Now, let’s connect to the Redis database. Also, let’s create an instance of the Gin Engine after the Redis database has also been connected.
+Now, let’s connect to the Redis database. Also, let’s create an instance of the Gin Engine after the Redis database has
+also been connected.
 
 **main.go**
 
@@ -250,7 +251,7 @@ package main
 // ? Create required variables that we'll re-assign later
 
 // ? Init function that will run before the "main" function
-     func init() {
+func init() {
 
 	// ? Load the .env variables
 
@@ -268,8 +269,8 @@ package main
 		panic(err)
 	}
 
-	err = redisclient.Set(ctx, "test", "Welcome to Golang with Redis and MongoDB", 
-     0).Err()
+	err = redisclient.Set(ctx, "test", "Welcome to Golang with Redis and MongoDB",
+		0).Err()
 	if err != nil {
 		panic(err)
 	}
@@ -278,7 +279,7 @@ package main
 
 	// ? Create the Gin Engine instance
 	server = gin.Default()
-   }
+}
 ```
 
 Here comes the good part. Let’s define the `main` function.
@@ -287,34 +288,38 @@ Here comes the good part. Let’s define the `main` function.
 
 ```go
 func main() {
-	config, err := config.LoadConfig(".")
+config, err := config.LoadConfig(".")
 
-	if err != nil {
-		log.Fatal("Could not load config", err)
-	}
+if err != nil {
+log.Fatal("Could not load config", err)
+}
 
-	defer mongoclient.Disconnect(ctx)
+defer mongoclient.Disconnect(ctx)
 
-	value, err := redisclient.Get(ctx, "test").Result()
+value, err := redisclient.Get(ctx, "test").Result()
 
-	if err == redis.Nil {
-		fmt.Println("key: test does not exist")
-	} else if err != nil {
-		panic(err)
-	}
+if err == redis.Nil {
+fmt.Println("key: test does not exist")
+} else if err != nil {
+panic(err)
+}
 
-	router := server.Group("/api")
-	router.GET("/healthchecker", func(ctx *gin.Context) {
-		ctx.JSON(http.StatusOK, gin.H{"status": "success", "message": value})
-	})
+router := server.Group("/api")
+router.GET("/healthchecker", func (ctx *gin.Context) {
+ctx.JSON(http.StatusOK, gin.H{"status": "success", "message": value})
+})
 
-	log.Fatal(server.Run(":" + config.Port))
+log.Fatal(server.Run(":" + config.Port))
 }
 ```
+
 Here is a breakdown of what I did above:
+
 - First I loaded the environment variables with the `config.LoadConfig(".")` function.
-- Next, I created a router group and passed `/api` as an argument since all requests to the server will have `/api` after the hostname.
-- Lastly, I created a GET route `/health-checker` to return the message we stored in the Redis database. This is only needed for testing the API.
+- Next, I created a router group and passed `/api` as an argument since all requests to the server will have `/api`
+  after the hostname.
+- Lastly, I created a GET route `/health-checker` to return the message we stored in the Redis database. This is only
+  needed for testing the API.
 
 Below is the complete code for the `main.go` file.
 
@@ -417,9 +422,11 @@ func main() {
 	log.Fatal(server.Run(":" + config.Port))
 }
 ```
+
 #### Test the Golang API
 
-Now, let’s test the API by sending a GET request to [http://localhost:8000/api/health-checker](http://localhost:8000/api/health-checker).
+Now, let’s test the API by sending a GET request
+to [http://localhost:8000/api/health-checker](http://localhost:8000/api/health-checker).
 
 Before you make the API request, run this command to start both the Docker containers and the Go application.
 
@@ -428,7 +435,7 @@ docker-compose up -d && go run main.go
 
 ```
 
-Now open an API testing tool (Postman, Thunder Client, HTTP Client, REST Client, etc ) and send a GET request to 
+Now open an API testing tool (Postman, Thunder Client, HTTP Client, REST Client, etc ) and send a GET request to
 [http://localhost:8000/api/health-checker](http://localhost:8000/api/health-checker)
 
 ![auth-service-grpc-golang-health-checker](images/auth-service-grpc-golang-health-checker.png)
@@ -439,11 +446,13 @@ show redis key:
 
 ## 2. Golang & MongoDB: JWT Authentication and Authorization
 
-In this article, you’ll learn how to implement RS256 JWT Authentication and Authorization with Golang, Gin Gonic, MongoDB-Go-driver, and Docker-compose.
+In this article, you’ll learn how to implement RS256 JWT Authentication and Authorization with Golang, Gin Gonic,
+MongoDB-Go-driver, and Docker-compose.
 
 ### How to Generate Public and Private Keys
 
-To generate the public and private keys, navigate to [this website](https://www.base64encode.org/) and click on the “**Generate New Keys**” button.
+To generate the public and private keys, navigate to [this website](https://www.base64encode.org/) and click on the “**
+Generate New Keys**” button.
 
 **Private Key**
 
@@ -476,9 +485,11 @@ lOuWmvObM+UdZyN/AgMBAAE=
 -----END PUBLIC KEY-----
 ```
 
-Next, copy the private key and visit [this website](https://www.base64encode.org/) to encode it in base64. Later we’ll use the base64 Golang package to decode it back to ASCII string.
+Next, copy the private key and visit [this website](https://www.base64encode.org/) to encode it in base64. Later we’ll
+use the base64 Golang package to decode it back to ASCII string.
 
-On the [Base64 Decode and Encode website](https://www.base64encode.org/), paste the copied private key into the input field and click on the “Encode” button.
+On the [Base64 Decode and Encode website](https://www.base64encode.org/), paste the copied private key into the input
+field and click on the “Encode” button.
 
 ```text
 LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlDV3dJQkFBS0JnSHhaQTYzWUhaYXlZa3EvUzRGZ2NMWnMyVnBnZFgvUzJFSTJIdGx4WExrZy9scUIyV2NYCnRsakZDNXpENkRiYVorRGFZd0dUQW9vSWZDTUgvOFp3TFJnZHZSb3VHdkVZYkF4N0NiZTUzOTNGNjJMWVIwUVUKbnNYOHFVdWZ5ZXVBZUw5MFFFRVJBRHJxZlM1SUlLUXhoRjVXd01xZmxPdVdtdk9iTStVZFp5Ti9BZ01CQUFFQwpnWUEwNUJmd2hoQnYzUWg2Q3N3dkI3cHBuZnNGdWluQWFRcWJmekc0QThRUTZydkYrNTFoZ0hDTGFhVDYxVW1jCnEyR3IvcmhHSHlYaFdLS1VzLzVUaGJ0bit2RVdqY3lTalFzMWx6cHk1RU12OHYxcWU5YTJKRElLQWZkTGk4dTgKSUZyTGZZYldISGNleURyTDBKUGltZTVDbk50MUpwWERsK1V2N3hCOFhwNmpJUUpCQVBYODhBQ3JYdnFEMUVjVQo4OXlWNFo5c24vREhVdU41RDU3dlpkK1AxY3l1VDJITWpOSUw2SGk2b0RnSE4zTHpzS3BVd2Nwa1VTQldDMHlwClhsZGRlR1VDUVFDQmFLWis5UEw0Um5SL2V5ZmQwaWdIRXpDNlRrdlROMjlKR3pxZGNrQi9LU1BGdXRNYjVoTjgKOHdzbDlYZzV1Z2s1R0RtK2JMZVRyNThoVVV6SFZTUVRBa0VBM2d1Q1FiaHZ0Y2JHR1p2cVBSWDJZa2hWWDYwdApQelNLU3pkaVNCbTRMbGl5UTErM1JldUYzMlRuTjJ3Y08yR0orVmNrenlNYXNBdTdpMm5mUlJHVW1RSkFPaUZIClFScEpGa3VYd3pnUU5XMVV1N0RjSDZSU0hVUDJnbkZ2eUEvdGR2R0U5eW92OElWT1ZiOWJUNmJQWmFieXc2bmwKTG12cG5yYXlGYVpPaGUveDd3SkFHMkY2YXlMcXhveHdKamVvY0hEOFBJSnk3WmhVT1V6UmJEbGgvWjNrSStUeAo3dmlCeTZXbDRFZVVHMzZ0VC8xeWVqSUtFejNlWUdIWkVrVG5tRUZCT3c9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQ==
@@ -486,8 +497,8 @@ LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlDV3dJQkFBS0JnSHhaQTYzWUhaYXlZa3Ev
 
 Copy the encoded private key and add it to the `app.env` file as `ACCESS_TOKEN_PRIVATE_KEY`.
 
-Go back to the website where you generated the keys and copy the corresponding public key.
-Visit the **Base64 Decode and Encode website** and encode it to base64 before adding it to the `app.env` file as `ACCESS_TOKEN_PUBLIC_KEY`.
+Go back to the website where you generated the keys and copy the corresponding public key. Visit the **Base64 Decode and
+Encode website** and encode it to base64 before adding it to the `app.env` file as `ACCESS_TOKEN_PUBLIC_KEY`.
 
 ```text
 LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlHZU1BMEdDU3FHU0liM0RRRUJBUVVBQTRHTUFEQ0JpQUtCZ0h4WkE2M1lIWmF5WWtxL1M0RmdjTFpzMlZwZwpkWC9TMkVJMkh0bHhYTGtnL2xxQjJXY1h0bGpGQzV6RDZEYmFaK0RhWXdHVEFvb0lmQ01ILzhad0xSZ2R2Um91Ckd2RVliQXg3Q2JlNTM5M0Y2MkxZUjBRVW5zWDhxVXVmeWV1QWVMOTBRRUVSQURycWZTNUlJS1F4aEY1V3dNcWYKbE91V212T2JNK1VkWnlOL0FnTUJBQUU9Ci0tLS0tRU5EIFBVQkxJQyBLRVktLS0tLQ==
@@ -540,7 +551,8 @@ LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlHZk1BMEdDU3FHU0liM0RRRUJBUVVBQTRHTkFEQ0Jp
 
 ### Update Environment Variables
 
-You can copy and paste the environment variables below into your `app.env` file if you find it difficult to encode the private and public keys.
+You can copy and paste the environment variables below into your `app.env` file if you find it difficult to encode the
+private and public keys.
 
 I also added the access and refresh tokens expiration time and max-age to the `app.env` file.
 
@@ -573,7 +585,8 @@ REFRESH_TOKEN_EXPIRED_IN=60m
 REFRESH_TOKEN_MAXAGE=60
 ```
 
-Next, update the `config/default.go` file with the environment variables provided in the `app.env` file for Viper to load and make them available in the project.
+Next, update the `config/default.go` file with the environment variables provided in the `app.env` file for Viper to
+load and make them available in the project.
 
 **config/default.go**
 
@@ -619,13 +632,16 @@ func LoadConfig(path string) (config Config, err error) {
 
 ### Creating the User models with structs
 
-In the JSON web Token authentication flow, we need to start by signing up the user. To achieve that let’s define a struct that specifies the fields required to register a user.
+In the JSON web Token authentication flow, we need to start by signing up the user. To achieve that let’s define a
+struct that specifies the fields required to register a user.
 
-To define the user struct, you need to specify the field name followed by the field type and an optional tag which will be used by `Gin Gonic` and `MongoDB` for validation, marshaling, and unmarshaling.
+To define the user struct, you need to specify the field name followed by the field type and an optional tag which will
+be used by `Gin Gonic` and `MongoDB` for validation, marshaling, and unmarshaling.
 
 Now create a `SignUpInput` struct to specify the fields required to register a new user.
 
-The `bson` tag will be used by MongoDB since MongoDB stores data as BSON documents. Also, the `json` tag will be used by Gin Gonic for validating user inputs.
+The `bson` tag will be used by MongoDB since MongoDB stores data as BSON documents. Also, the `json` tag will be used by
+Gin Gonic for validating user inputs.
 
 Lastly, the `binding` tag specifies additional validation rules that will be used by Gin Gonic to validate user inputs.
 
@@ -637,19 +653,19 @@ package models
 import "time"
 
 type SignUpInput struct {
-	Name string `json:"name" bson:"name" bindinng:"required"`
-	Email string `json:"email" bson:"email" binding:"required"`
-	Password string `json:"password" bson:"password" binding:"required,min=8"`
-	ConfirmPassword string `json:"confirm_password" bson:"confirm_password,omitempty" binding:"required"`
-	Role string `json:"role" bson:"role"`
-	Verified bool `json:"verified" bson:"verified"`
-	CreatedAt time.Time `json:"created_at" bson:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" bson:"updated_at"`
+	Name            string    `json:"name" bson:"name" bindinng:"required"`
+	Email           string    `json:"email" bson:"email" binding:"required"`
+	Password        string    `json:"password" bson:"password" binding:"required,min=8"`
+	ConfirmPassword string    `json:"confirm_password" bson:"confirm_password,omitempty" binding:"required"`
+	Role            string    `json:"role" bson:"role"`
+	Verified        bool      `json:"verified" bson:"verified"`
+	CreatedAt       time.Time `json:"created_at" bson:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at" bson:"updated_at"`
 }
 ```
 
-With the user login logic, we’ll only require the user to provide an email and password. 
-To achieve that create a `SignInInput` struct with email and password fields and make them required.
+With the user login logic, we’ll only require the user to provide an email and password. To achieve that create
+a `SignInInput` struct with email and password fields and make them required.
 
 **models/user.model.go**
 
@@ -665,3 +681,176 @@ type SignInInput struct {
 	Password string `json:"password" bson:"password" binding:"required"`
 }
 ```
+
+Next, create a `DBResponse` struct to define the fields that will be returned by MongoDB.
+
+**models/user.model.go**
+
+```go
+package models
+
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
+// ? SignUpInput struct
+
+// ? SignInInput struct
+
+type DBResponse struct {
+	ID              primitive.ObjectID `json:"id" bson:"_id"`
+	Name            string             `json:"name" bson:"name"`
+	Email           string             `json:"email" bson:"email"`
+	Password        string             `json:"password" bson:"password"`
+	PasswordConfirm string             `json:"passwordConfirm,omitempty" bson:"passwordConfirm,omitempty"`
+	Role            string             `json:"role" bson:"role"`
+	Verified        bool               `json:"verified" bson:"verified"`
+	CreatedAt       time.Time          `json:"created_at" bson:"created_at"`
+	UpdatedAt       time.Time          `json:"updated_at" bson:"updated_at"`
+}
+```
+
+Lastly, create a struct to specify the fields that should be included in the JSON response and a function to filter out
+the sensitive fields.
+
+```go
+package models
+
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
+// ? SignUpInput struct
+
+// ? SignInInput struct
+
+// ? DBResponse struct
+
+type UserResponse struct {
+	ID        primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+	Name      string             `json:"name,omitempty" bson:"name,omitempty"`
+	Email     string             `json:"email,omitempty" bson:"email,omitempty"`
+	Role      string             `json:"role,omitempty" bson:"role,omitempty"`
+	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
+	UpdatedAt time.Time          `json:"updated_at" bson:"updated_at"`
+}
+
+func FilteredResponse(user *DBResponse) UserResponse {
+	return UserResponse{
+		ID:        user.ID,
+		Email:     user.Email,
+		Name:      user.Name,
+		Role:      user.Role,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+	}
+}
+```
+
+Below is the complete code for the user model
+
+```go
+package models
+
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
+// ? SignUpInput struct
+type SignUpInput struct {
+	Name            string    `json:"name" bson:"name" binding:"required"`
+	Email           string    `json:"email" bson:"email" binding:"required"`
+	Password        string    `json:"password" bson:"password" binding:"required,min=8"`
+	PasswordConfirm string    `json:"passwordConfirm" bson:"passwordConfirm,omitempty" binding:"required"`
+	Role            string    `json:"role" bson:"role"`
+	Verified        bool      `json:"verified" bson:"verified"`
+	CreatedAt       time.Time `json:"created_at" bson:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at" bson:"updated_at"`
+}
+
+// ? SignInInput struct
+type SignInInput struct {
+	Email    string `json:"email" bson:"email" binding:"required"`
+	Password string `json:"password" bson:"password" binding:"required"`
+}
+
+// ? DBResponse struct
+type DBResponse struct {
+	ID              primitive.ObjectID `json:"id" bson:"_id"`
+	Name            string             `json:"name" bson:"name"`
+	Email           string             `json:"email" bson:"email"`
+	Password        string             `json:"password" bson:"password"`
+	PasswordConfirm string             `json:"passwordConfirm,omitempty" bson:"passwordConfirm,omitempty"`
+	Role            string             `json:"role" bson:"role"`
+	Verified        bool               `json:"verified" bson:"verified"`
+	CreatedAt       time.Time          `json:"created_at" bson:"created_at"`
+	UpdatedAt       time.Time          `json:"updated_at" bson:"updated_at"`
+}
+
+// ? UserResponse struct
+type UserResponse struct {
+	ID        primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+	Name      string             `json:"name,omitempty" bson:"name,omitempty"`
+	Email     string             `json:"email,omitempty" bson:"email,omitempty"`
+	Role      string             `json:"role,omitempty" bson:"role,omitempty"`
+	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
+	UpdatedAt time.Time          `json:"updated_at" bson:"updated_at"`
+}
+
+func FilteredResponse(user *DBResponse) UserResponse {
+	return UserResponse{
+		ID:        user.ID,
+		Email:     user.Email,
+		Name:      user.Name,
+		Role:      user.Role,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+	}
+}
+```
+
+### Create an Auth and User Interfaces
+
+Typically, in Golang RESTful API, there are controllers and services. Controllers don't have direct access to database,
+instead they call services to either mutate or query database.
+
+#### Authentication interface
+
+Now let define an `AuthService` interface that has method `SignUpUser` and `SignInUser`
+
+**services/auth.service.go**
+
+```go
+package services
+
+import "github.com/SarathLUN/auth-service-grpc-golang/models"
+
+type AuthService interface {
+	SignUpUser(*models.SignUpInput) (*models.DBResponse, error)
+	SignInUser(*models.SignInInput) (*models.DBResponse, error)
+}
+```
+
+#### User Interface
+
+Also, define a `UserService` interface that has method `FindUserById` and `FindUserByEmail`.
+
+**services/user.service.go**
+
+```go
+package services
+
+import "github.com/SarathLUN/auth-service-grpc-golang/models"
+
+type UserService interface {
+  FindUserById(string) (*models.DBResponse, error)
+  FindUserByEmail(string) (*models.DBResponse, error)
+}
+```
+
