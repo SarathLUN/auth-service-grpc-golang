@@ -854,3 +854,49 @@ type UserService interface {
 }
 ```
 
+### Create utility function to hash and verify password
+
+Another important port of authentication is to encrypt the plain password provided by the user before saving it to 
+the database.
+
+To secure the password, we use a hashing algorithm to transform the plain password into a hashed string.
+
+In the event of a compromised database, the hacker can not easily decrypt the hashed password to get the original 
+plain password.
+
+When two strings are hashed the outputs are the same so we use **salt** to ensure that no two users having the same 
+password end up with the same hashed password.
+
+There are different ways of hashing a string but in this tutorial, I will use the `Golang Bcrypt package` to hash 
+the user's password.
+
+To hash a string with Bcrypt, we specify a **Cost Factor** which is the amount of time needed to calculate a single 
+hash.
+
+The higher the **Cost Factor** the longer the hashing time and the more difficult it is to brute force. Modern 
+computers now have powerful CPUs so using a Cost Factor of 12 should be fine.
+
+Now, let's define two functions to hash and verify the user's password.
+
+**utils/password.go**
+
+```go
+package utils
+
+import (
+  "fmt"
+  "golang.org/x/crypto/bcrypt"
+)
+
+func HashPassword(password string) (string, error) {
+  hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+  if err != nil {
+    return "", fmt.Errorf("could not hash password %w", err)
+  }
+  return string(hashedPassword),nil
+}
+
+func VerifyPassword(hashedPassword string, candidatePassword string) error {
+  return bcrypt.CompareHashAndPassword([]byte(hashedPassword),[]byte(candidatePassword))
+}
+```
