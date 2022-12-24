@@ -983,3 +983,25 @@ func (uc AuthServiceImpl) SignInUser(*models.SignInInput) (*models.DBResponse, e
   return nil,nil
 }
 ```
+
+Here is the summary of what I did in the `SignUpUser` function:
+
+- First, I added to the database with the `InsertOne()` function.
+- Next, I added a unique index on the email field to ensure that no two users can have the same email address.
+- Lastly, I added the `FindOne()` function to find and return the user that was added to database.
+
+#### User interface implementation 
+
+In order to implement the `UserService` interface, I define the `FindUserByID()` and `FindUserByEmail()` function 
+receivers.
+
+In the `FindUserByID()` function, I convert the `id` string to a MongoDB ObjectID for the query to work.
+
+Also, I convert the `email` string to lowercase in the `FindUserByEmail()` function before the calling the `FindOne()
+` function, since MongoDB fields are not case-sensitive.
+
+**services/user.service.impl.go**
+
+```go
+
+```
