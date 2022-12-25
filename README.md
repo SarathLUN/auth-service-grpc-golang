@@ -1054,3 +1054,5 @@ func (us *UserServiceImpl) FindUserByEmail(email string) (*models.DBResponse, er
 }
 
 ```
+
+### Create a utility function to sign and verify JWT tokens
