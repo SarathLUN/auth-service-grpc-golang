@@ -1056,3 +1056,26 @@ func (us *UserServiceImpl) FindUserByEmail(email string) (*models.DBResponse, er
 ```
 
 ### Create a utility function to sign and verify JWT tokens
+
+User authentication can be done with difference strategies but each strategy has a drawback or security flaws.
+
+The concept of authentication can get complex so library like Passport provide difference strategies to simplify the 
+process.
+
+In this tutorial I use JSON Web Token to sign in and persist the user to enable them to request protected routes 
+without to login on every request.
+
+#### Create Json Web Token
+
+JSON Web Token are used to implement stateless authentication but that alone is not enough since the only way that 
+the token can be invalidated is when it has expired.
+
+You can read more about the flaws of JSON Web Token in this [article](https://redis.com/blog/json-web-tokens-jwt-are-dangerous-for-user-sessions/).
+
+Now let's define a `CreateToken()` function to generate either **access** or **refresh** tokens.
+
+**utils/token.go**
+
+```go
+
+```
