@@ -68,20 +68,20 @@ func (ac *AuthController) SignInUser(ctx *gin.Context) {
 
 	config, _ := config2.LoadConfig(".")
 	// Generate Tokens
-	access_tokens, err := utils.CreateToken(config.AccessTokenExpiredIn, user.ID, config.AccessTokenPrivateKey)
+	accessTokens, err := utils.CreateToken(config.AccessTokenExpiredIn, user.ID, config.AccessTokenPrivateKey)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
 
-	refresh_tokens, err := utils.CreateToken(config.RefreshTokenExpiredIn, user.ID, config.RefreshTokenPrivateKey)
+	refreshTokens, err := utils.CreateToken(config.RefreshTokenExpiredIn, user.ID, config.RefreshTokenPrivateKey)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
 
-	ctx.SetCookie("access_token", access_tokens, config.AccessTokenMaxAge*60, "/", "localhost", false, true)
-	ctx.SetCookie("refresh_token", refresh_tokens, config.RefreshTokenMaxAge*60, "/", "localhost", false, true)
+	ctx.SetCookie("access_token", accessTokens, config.AccessTokenMaxAge*60, "/", "localhost", false, true)
+	ctx.SetCookie("refresh_token", refreshTokens, config.RefreshTokenMaxAge*60, "/", "localhost", false, true)
 	ctx.SetCookie("logged_in", "true", config.AccessTokenMaxAge*60, "/", "localhost", false, false)
-	ctx.JSON(http.StatusOK, gin.H{"status": "success", "access_token": access_tokens})
+	ctx.JSON(http.StatusOK, gin.H{"status": "success", "access_token": accessTokens})
 }
