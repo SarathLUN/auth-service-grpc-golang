@@ -849,31 +849,31 @@ package services
 import "github.com/SarathLUN/auth-service-grpc-golang/models"
 
 type UserService interface {
-  FindUserById(string) (*models.DBResponse, error)
-  FindUserByEmail(string) (*models.DBResponse, error)
+	FindUserById(string) (*models.DBResponse, error)
+	FindUserByEmail(string) (*models.DBResponse, error)
 }
 ```
 
 ### Create utility function to hash and verify password
 
-Another important port of authentication is to encrypt the plain password provided by the user before saving it to 
+Another important port of authentication is to encrypt the plain password provided by the user before saving it to
 the database.
 
 To secure the password, we use a hashing algorithm to transform the plain password into a hashed string.
 
-In the event of a compromised database, the hacker can not easily decrypt the hashed password to get the original 
+In the event of a compromised database, the hacker can not easily decrypt the hashed password to get the original
 plain password.
 
-When two strings are hashed the outputs are the same so we use **salt** to ensure that no two users having the same 
+When two strings are hashed the outputs are the same so we use **salt** to ensure that no two users having the same
 password end up with the same hashed password.
 
-There are different ways of hashing a string but in this tutorial, I will use the `Golang Bcrypt package` to hash 
+There are different ways of hashing a string but in this tutorial, I will use the `Golang Bcrypt package` to hash
 the user's password.
 
-To hash a string with Bcrypt, we specify a **Cost Factor** which is the amount of time needed to calculate a single 
+To hash a string with Bcrypt, we specify a **Cost Factor** which is the amount of time needed to calculate a single
 hash.
 
-The higher the **Cost Factor** the longer the hashing time and the more difficult it is to brute force. Modern 
+The higher the **Cost Factor** the longer the hashing time and the more difficult it is to brute force. Modern
 computers now have powerful CPUs so using a Cost Factor of 12 should be fine.
 
 Now, let's define two functions to hash and verify the user's password.
@@ -884,20 +884,20 @@ Now, let's define two functions to hash and verify the user's password.
 package utils
 
 import (
-  "fmt"
-  "golang.org/x/crypto/bcrypt"
+	"fmt"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func HashPassword(password string) (string, error) {
-  hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-  if err != nil {
-    return "", fmt.Errorf("could not hash password %w", err)
-  }
-  return string(hashedPassword),nil
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", fmt.Errorf("could not hash password %w", err)
+	}
+	return string(hashedPassword), nil
 }
 
 func VerifyPassword(hashedPassword string, candidatePassword string) error {
-  return bcrypt.CompareHashAndPassword([]byte(hashedPassword),[]byte(candidatePassword))
+	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(candidatePassword))
 }
 ```
 
@@ -907,10 +907,10 @@ Next, let's define a `SignUpUser` service that will be called by a controller to
 
 #### Auth interface implementation
 
-I included the MongoDB Collection struct and the context interface of the context package in the `AuthServiceImpl` 
+I included the MongoDB Collection struct and the context interface of the context package in the `AuthServiceImpl`
 struct to help us perform basic CRUD operation against the MongoDB database.
 
-Then I use the `NewAuthService` constructor function to instantiate the MongoDB collection struct and Context 
+Then I use the `NewAuthService` constructor function to instantiate the MongoDB collection struct and Context
 interface. Also, the `NewAuthService` constructor implements the `AuthService` interface we defined above.
 
 **services/auth.service.impl.go**
@@ -920,67 +920,67 @@ interface. Also, the `NewAuthService` constructor implements the `AuthService` i
 package services
 
 import (
-  "context"
-  "errors"
-  "github.com/SarathLUN/auth-service-grpc-golang/models"
-  "github.com/SarathLUN/auth-service-grpc-golang/utils"
-  "go.mongodb.org/mongo-driver/bson"
-  "go.mongodb.org/mongo-driver/mongo"
-  "go.mongodb.org/mongo-driver/mongo/options"
-  "strings"
-  "time"
+	"context"
+	"errors"
+	"github.com/SarathLUN/auth-service-grpc-golang/models"
+	"github.com/SarathLUN/auth-service-grpc-golang/utils"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"strings"
+	"time"
 )
 
 type AuthServiceImpl struct {
-  collection *mongo.Collection
-  ctx context.Context
+	collection *mongo.Collection
+	ctx        context.Context
 }
 
 func NewAuthService(collection *mongo.Collection, ctx context.Context) AuthService {
-  return &AuthServiceImpl{
-    collection: collection,
-    ctx: ctx,
-  }
+	return &AuthServiceImpl{
+		collection: collection,
+		ctx:        ctx,
+	}
 }
 
 func (uc *AuthServiceImpl) SignUpUser(user *models.SignUpInput) (*models.DBResponse, error) {
-  user.CreatedAt = time.Now()
-  user.UpdatedAt = user.CreatedAt
-  user.Email = strings.ToLower(user.Email)
-  user.ConfirmPassword = ""
-  user.Verified = true
-  user.Role = "user"
-  hashedPassword, _ := utils.HashPassword(user.Password)
-  user.Password = hashedPassword
-  res, err := uc.collection.InsertOne(uc.ctx, &user)
-  if err != nil {
-    if er, ok := err.(mongo.WriteException); ok && er.WriteErrors[0].Code == 11000{
-      return nil, errors.New("user with this email already is existed")
-    }
-    return nil, err
-  }
+	user.CreatedAt = time.Now()
+	user.UpdatedAt = user.CreatedAt
+	user.Email = strings.ToLower(user.Email)
+	user.ConfirmPassword = ""
+	user.Verified = true
+	user.Role = "user"
+	hashedPassword, _ := utils.HashPassword(user.Password)
+	user.Password = hashedPassword
+	res, err := uc.collection.InsertOne(uc.ctx, &user)
+	if err != nil {
+		if er, ok := err.(mongo.WriteException); ok && er.WriteErrors[0].Code == 11000 {
+			return nil, errors.New("user with this email already is existed")
+		}
+		return nil, err
+	}
 
-  // create unique index for the email field
-  opt := options.Index()
-  opt.SetUnique(true)
-  index := mongo.IndexModel{Keys: bson.M{"email": 1}, Options: opt}
+	// create unique index for the email field
+	opt := options.Index()
+	opt.SetUnique(true)
+	index := mongo.IndexModel{Keys: bson.M{"email": 1}, Options: opt}
 
-  if _, err := uc.collection.Indexes().CreateOne(uc.ctx, index); err != nil{
-    return nil, errors.New("could not create index for email")
-  }
+	if _, err := uc.collection.Indexes().CreateOne(uc.ctx, index); err != nil {
+		return nil, errors.New("could not create index for email")
+	}
 
-  var newUser *models.DBResponse
-  query := bson.M{"_id":res.InsertedID}
+	var newUser *models.DBResponse
+	query := bson.M{"_id": res.InsertedID}
 
-  err = uc.collection.FindOne(uc.ctx,query).Decode(&newUser)
-  if err != nil {
-    return nil, err
-  }
-  return newUser, nil
+	err = uc.collection.FindOne(uc.ctx, query).Decode(&newUser)
+	if err != nil {
+		return nil, err
+	}
+	return newUser, nil
 }
 
 func (uc AuthServiceImpl) SignInUser(*models.SignInInput) (*models.DBResponse, error) {
-  return nil,nil
+	return nil, nil
 }
 ```
 
@@ -990,9 +990,9 @@ Here is the summary of what I did in the `SignUpUser` function:
 - Next, I added a unique index on the email field to ensure that no two users can have the same email address.
 - Lastly, I added the `FindOne()` function to find and return the user that was added to database.
 
-#### User interface implementation 
+#### User interface implementation
 
-In order to implement the `UserService` interface, I define the `FindUserByID()` and `FindUserByEmail()` function 
+In order to implement the `UserService` interface, I define the `FindUserByID()` and `FindUserByEmail()` function
 receivers.
 
 In the `FindUserByID()` function, I convert the `id` string to a MongoDB ObjectID for the query to work.
@@ -1059,23 +1059,260 @@ func (us *UserServiceImpl) FindUserByEmail(email string) (*models.DBResponse, er
 
 User authentication can be done with difference strategies but each strategy has a drawback or security flaws.
 
-The concept of authentication can get complex so library like Passport provide difference strategies to simplify the 
+The concept of authentication can get complex so library like Passport provide difference strategies to simplify the
 process.
 
-In this tutorial I use JSON Web Token to sign in and persist the user to enable them to request protected routes 
+In this tutorial I use JSON Web Token to sign in and persist the user to enable them to request protected routes
 without to login on every request.
 
 #### Create Json Web Token
 
-JSON Web Token are used to implement stateless authentication but that alone is not enough since the only way that 
+JSON Web Token are used to implement stateless authentication but that alone is not enough since the only way that
 the token can be invalidated is when it has expired.
 
-You can read more about the flaws of JSON Web Token in this [article](https://redis.com/blog/json-web-tokens-jwt-are-dangerous-for-user-sessions/).
+You can read more about the flaws of JSON Web Token in
+this [article](https://redis.com/blog/json-web-tokens-jwt-are-dangerous-for-user-sessions/).
 
 Now let's define a `CreateToken()` function to generate either **access** or **refresh** tokens.
 
 **utils/token.go**
 
 ```go
+func CreateToken(ttl time.Duration, payload interface{}, privateKey string) (string, error) {
+decodedPrivateKey, err := base64.StdEncoding.DecodeString(privateKey)
+if err != nil {
+return "", fmt.Errorf("could not decode key: %w", err)
+}
+key, err := jwt.ParseRSAPrivateKeyFromPEM(decodedPrivateKey)
 
+if err != nil {
+return "", fmt.Errorf("create: parse key: %w", err)
+}
+
+now := time.Now().UTC()
+
+claims := make(jwt.MapClaims)
+claims["sub"] = payload
+claims["exp"] = now.Add(ttl).Unix()
+claims["iat"] = now.Unix()
+claims["nbf"] = now.Unix()
+
+token, err := jwt.NewWithClaims(jwt.SigningMethodRS256, claims).SignedString(key)
+
+if err != nil {
+return "", fmt.Errorf("create: sign token: %w", err)
+}
+
+return token, nil
+}
+```
+
+Here is what I did above:
+
+- First, I decode the private key into ASCII string
+- Next, I parse the decoded private key and define the token claims.
+- Lastly, I signed the token with the RS256 algorithm and return it.
+
+#### Verify JSON Web Token
+
+Next, let's define a `ValidateToken()` function to verify the access or refresh token.
+
+The `ValidateToken()` returns the user's ID we store in the Token payload or an error if the tokens was manipulated or
+has expired.
+
+**utils/tokens.go**
+
+```go
+func ValidateToken(token string, publicKey string) (interface{}, error) {
+decodedPublicKey, err := base64.StdEncoding.DecodeString(publicKey)
+if err != nil {
+return nil, fmt.Errorf("could not decode: %w", err)
+}
+
+key, err := jwt.ParseRSAPublicKeyFromPEM(decodedPublicKey)
+
+if err != nil {
+return "", fmt.Errorf("validate: parse key: %w", err)
+}
+
+parsedToken, err := jwt.Parse(token, func (t *jwt.Token) (interface{}, error) {
+if _, ok := t.Method.(*jwt.SigningMethodRSA); !ok {
+return nil, fmt.Errorf("unexpected method: %s", t.Header["alg"])
+}
+return key, nil
+})
+
+if err != nil {
+return nil, fmt.Errorf("validate: %w", err)
+}
+
+claims, ok := parsedToken.Claims.(jwt.MapClaims)
+if !ok || !parsedToken.Valid {
+return nil, fmt.Errorf("validate: invalid token")
+}
+
+return claims["sub"], nil
+}
+```
+
+### Create the authentication controllers
+
+Now, let's create a `AuthContoller` struct to have access to the services we defined in `AuthService` and `UserService`
+interface with help of composition.
+
+#### Signup user controller
+
+**controllers/auth.controller.go**
+
+```go
+type AuthController struct {
+authService services.AuthService
+userService services.UserService
+}
+
+func NewAuthController(authService services.AuthService, userService services.UserService) AuthController {
+return AuthController{authService, userService}
+}
+
+func (ac *AuthController) SignUpUser(ctx *gin.Context) {
+var user *models.SignUpInput
+
+if err := ctx.ShouldBindJSON(&user); err != nil {
+ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+return
+}
+
+if user.Password != user.PasswordConfirm {
+ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Passwords do not match"})
+return
+}
+
+newUser, err := ac.authService.SignUpUser(user)
+
+if err != nil {
+if strings.Contains(err.Error(), "email already exist") {
+ctx.JSON(http.StatusConflict, gin.H{"status": "error", "message": err.Error()})
+return
+}
+ctx.JSON(http.StatusBadGateway, gin.H{"status": "error", "message": err.Error()})
+return
+}
+
+ctx.JSON(http.StatusCreated, gin.H{"status": "success", "data": gin.H{"user": models.FilteredResponse(newUser)}})
+}
+```
+
+Detail of what I dit in the `SignUpUser` method:
+
+- I validate the user's input against the `SignUpInput` struct and return an error if any of the rules were not
+  satisfied.
+- Next, I check if the `Password` and `ConfirmPassword` values are equal.
+- Then, I called the `SignUpUser` service with the `user` pointer to add the new user to the database.
+- Lastly, I sent a JSON response to the user assuming there was no error. In an upcoming tutorial, we'll send email
+  verification code to the user's email.
+
+#### Login user controller
+
+Now let's create a controller to sign in the registered user.
+
+**controllers/auth.controller.go**
+
+```go
+func (ac *AuthController) SignInUser(ctx *gin.Context) {
+var credentials *models.SignInInput
+
+if err := ctx.ShouldBindJSON(&credentials); err != nil {
+ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+return
+}
+
+user, err := ac.userService.FindUserByEmail(credentials.Email)
+if err != nil {
+if err == mongo.ErrNoDocuments {
+ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Invalid email or password"})
+return
+}
+ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+return
+}
+
+if err := utils.VerifyPassword(user.Password, credentials.Password); err != nil {
+ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Invalid email or Password"})
+return
+}
+
+config, _ := config.LoadConfig(".")
+
+// Generate Tokens
+access_token, err := utils.CreateToken(config.AccessTokenExpiresIn, user.ID, config.AccessTokenPrivateKey)
+if err != nil {
+ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+return
+}
+
+refresh_token, err := utils.CreateToken(config.RefreshTokenExpiresIn, user.ID, config.RefreshTokenPrivateKey)
+if err != nil {
+ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+return
+}
+
+ctx.SetCookie("access_token", access_token, config.AccessTokenMaxAge*60, "/", "localhost", false, true)
+ctx.SetCookie("refresh_token", refresh_token, config.RefreshTokenMaxAge*60, "/", "localhost", false, true)
+ctx.SetCookie("logged_in", "true", config.AccessTokenMaxAge*60, "/", "localhost", false, false)
+
+ctx.JSON(http.StatusOK, gin.H{"status": "success", "access_token": access_token})
+}
+```
+
+In the `SignInUser` method, I validated the user's input against `SignInInput` struct and check if that user exist in
+database.
+
+Next, I validated the plain password against the hashed password stored in database and generate both access and refresh
+tokens.
+
+Finally, I sent the access and refresh tokens as cookies to user's client or browser.
+
+#### Refresh access tokens
+
+The access tokens can be refresh after 15mn as long as user has valid refresh token. This approach is not the best so
+later we'll integrate Redis for and extra layer of security.
+
+**controllers/auth.controller.go**
+
+```go
+func (ac *AuthController) RefreshAccessToken(ctx *gin.Context) {
+	message := "could not refresh access token"
+
+	cookie, err := ctx.Cookie("refresh_token")
+
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": "fail", "message": message})
+		return
+	}
+
+	config, _ := config.LoadConfig(".")
+
+	sub, err := utils.ValidateToken(cookie, config.RefreshTokenPublicKey)
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": "fail", "message": err.Error()})
+		return
+	}
+
+	user, err := ac.userService.FindUserById(fmt.Sprint(sub))
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": "fail", "message": "the user belonging to this token no logger exists"})
+		return
+	}
+
+	access_token, err := utils.CreateToken(config.AccessTokenExpiresIn, user.ID, config.AccessTokenPrivateKey)
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": "fail", "message": err.Error()})
+		return
+	}
+
+	ctx.SetCookie("access_token", access_token, config.AccessTokenMaxAge*60, "/", "localhost", false, true)
+	ctx.SetCookie("logged_in", "true", config.AccessTokenMaxAge*60, "/", "localhost", false, false)
+
+	ctx.JSON(http.StatusOK, gin.H{"status": "success", "access_token": access_token})
+}
 ```

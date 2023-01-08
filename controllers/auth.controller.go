@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	config2 "github.com/SarathLUN/auth-service-grpc-golang/config"
 	"github.com/SarathLUN/auth-service-grpc-golang/models"
 	"github.com/SarathLUN/auth-service-grpc-golang/services"
@@ -84,4 +85,32 @@ func (ac *AuthController) SignInUser(ctx *gin.Context) {
 	ctx.SetCookie("refresh_token", refreshTokens, config.RefreshTokenMaxAge*60, "/", "localhost", false, true)
 	ctx.SetCookie("logged_in", "true", config.AccessTokenMaxAge*60, "/", "localhost", false, false)
 	ctx.JSON(http.StatusOK, gin.H{"status": "success", "access_token": accessTokens})
+}
+
+func (ac *AuthController) RefreshAccessToken(ctx *gin.Context) {
+	message := "could not refresh access tokens."
+	cookie, err := ctx.Cookie("refresh_token")
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": "fail", "message": message})
+		return
+	}
+	config, _ := config2.LoadConfig(".")
+	sub, err := utils.ValidateToken(cookie, config.RefreshTokenPublicKey)
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": "fail", "message": err.Error()})
+		return
+	}
+	user, err := ac.userService.FindUserById(fmt.Sprint(sub))
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": "fail", "message": "the user belonging to this token no longer exists"})
+		return
+	}
+	accessToken, err := utils.CreateToken(config.AccessTokenExpiredIn, user.ID, config.AccessTokenPrivateKey)
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": "fail", "message": err.Error()})
+		return
+	}
+	ctx.SetCookie("access_token", accessToken, config.AccessTokenMaxAge*60, "/", "localhost", false, true)
+	ctx.SetCookie("logged_in", "true", config.AccessTokenMaxAge*60, "/", "localhost", false, false)
+	ctx.JSON(http.StatusOK, gin.H{"status": "success", "access_token": accessToken})
 }
