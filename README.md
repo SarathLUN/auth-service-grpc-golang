@@ -1326,10 +1326,84 @@ client to log them out.
 
 ```go
 func (ac *AuthController) LogoutUser(ctx *gin.Context) {
-	ctx.SetCookie("access_token", "", -1, "/", "localhost", false, true)
-	ctx.SetCookie("refresh_token", "", -1, "/", "localhost", false, true)
-	ctx.SetCookie("logged_in", "", -1, "/", "localhost", false, true)
+ctx.SetCookie("access_token", "", -1, "/", "localhost", false, true)
+ctx.SetCookie("refresh_token", "", -1, "/", "localhost", false, true)
+ctx.SetCookie("logged_in", "", -1, "/", "localhost", false, true)
 
-	ctx.JSON(http.StatusOK, gin.H{"status": "success"})
+ctx.JSON(http.StatusOK, gin.H{"status": "success"})
 }
 ```
+
+### Authentication middleware
+
+Let's create a `DeserializeUser` to extract and validate the access token from either Cookies object or Authorization header.
+
+Next, check if the user exists in the database with the user's id we stored in the token payload and attach the returned user to the Gin context struct with a `CurrentUser` key.
+
+**middleware/deserialize-user.go**
+
+```go
+func DeserializeUser(userService services.UserService) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		var access_token string
+		cookie, err := ctx.Cookie("access_token")
+
+		authorizationHeader := ctx.Request.Header.Get("Authorization")
+		fields := strings.Fields(authorizationHeader)
+
+		if len(fields) != 0 && fields[0] == "Bearer" {
+			access_token = fields[1]
+		} else if err == nil {
+			access_token = cookie
+		}
+
+		if access_token == "" {
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "You are not logged in"})
+			return
+		}
+
+		config, _ := config.LoadConfig(".")
+		sub, err := utils.ValidateToken(access_token, config.AccessTokenPublicKey)
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": err.Error()})
+			return
+		}
+
+		user, err := userService.FindUserById(fmt.Sprint(sub))
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "The user belonging to this token no logger exists"})
+			return
+		}
+
+		ctx.Set("currentUser", user)
+		ctx.Next()
+	}
+}
+```
+
+### Create the user controllers
+
+#### GetMe Controller
+
+Here I extract the user object we stored in the Gin context struct using the MustGet method and returned it as a JSON response.
+
+**controllers/user.controller.go**
+
+```go
+type UserController struct {
+	userService services.UserService
+}
+
+func NewUserController(userService services.UserService) UserController {
+	return UserController{userService}
+}
+
+func (uc *UserController) GetMe(ctx *gin.Context) {
+	currentUser := ctx.MustGet("currentUser").(*models.DBResponse)
+
+	ctx.JSON(http.StatusOK, gin.H{"status": "success", "data": gin.H{"user": models.FilteredResponse(currentUser)}})
+}
+```
+
+### Create Routes
+
