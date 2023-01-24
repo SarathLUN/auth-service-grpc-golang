@@ -1407,3 +1407,28 @@ func (uc *UserController) GetMe(ctx *gin.Context) {
 
 ### Create Routes
 
+The routes are responsible for routing the request to the appropriate controller.
+You'll be familiar with this syntax if you've worked with Express, Fastify, and FastAPI.
+
+#### Auth Routes
+
+**routes/auth.routes.go**
+
+```go
+type AuthRouteController struct {
+	authController controllers.AuthController
+}
+
+func NewAuthRouteController(authController controllers.AuthController) AuthRouteController {
+	return AuthRouteController{authController}
+}
+
+func (rc *AuthRouteController) AuthRoute(rg *gin.RouterGroup, userService services.UserService) {
+	router := rg.Group("/auth")
+
+	router.POST("/register", rc.authController.SignUpUser)
+	router.POST("/login", rc.authController.SignInUser)
+	router.GET("/refresh", rc.authController.RefreshAccessToken)
+	router.GET("/logout", middleware.DeserializeUser(userService), rc.authController.LogoutUser)
+}
+```
